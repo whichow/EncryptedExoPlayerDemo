@@ -16,18 +16,18 @@ public class EncryptedFileDataSourceFactory implements DataSource.Factory {
   private Cipher mCipher;
   private SecretKeySpec mSecretKeySpec;
   private IvParameterSpec mIvParameterSpec;
-  private TransferListener<? super DataSource> mTransferListener;
+//  private TransferListener<? super DataSource> mTransferListener;
 
-  public EncryptedFileDataSourceFactory(Cipher cipher, SecretKeySpec secretKeySpec, IvParameterSpec ivParameterSpec, TransferListener<? super DataSource> listener) {
+  public EncryptedFileDataSourceFactory(Cipher cipher, SecretKeySpec secretKeySpec, IvParameterSpec ivParameterSpec) {
     mCipher = cipher;
     mSecretKeySpec = secretKeySpec;
     mIvParameterSpec = ivParameterSpec;
-    mTransferListener = listener;
+//    mTransferListener = listener;
   }
 
   @Override
   public EncryptedFileDataSource createDataSource() {
-    return new EncryptedFileDataSource(mCipher, mSecretKeySpec, mIvParameterSpec, mTransferListener);
+    return new EncryptedFileDataSource(mCipher, mSecretKeySpec, mIvParameterSpec);
   }
 
 }

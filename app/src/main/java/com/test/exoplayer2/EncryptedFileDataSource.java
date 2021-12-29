@@ -27,7 +27,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 public final class EncryptedFileDataSource implements DataSource {
 
-  private final TransferListener<? super EncryptedFileDataSource> mTransferListener;
+//  private final TransferListener mTransferListener;
   private StreamingCipherInputStream mInputStream;
   private Uri mUri;
   private long mBytesRemaining;
@@ -36,11 +36,15 @@ public final class EncryptedFileDataSource implements DataSource {
   private SecretKeySpec mSecretKeySpec;
   private IvParameterSpec mIvParameterSpec;
 
-  public EncryptedFileDataSource(Cipher cipher, SecretKeySpec secretKeySpec, IvParameterSpec ivParameterSpec, TransferListener<? super EncryptedFileDataSource> listener) {
+  public EncryptedFileDataSource(Cipher cipher, SecretKeySpec secretKeySpec, IvParameterSpec ivParameterSpec) {
     mCipher = cipher;
     mSecretKeySpec = secretKeySpec;
     mIvParameterSpec = ivParameterSpec;
-    mTransferListener = listener;
+  }
+
+  @Override
+  public void addTransferListener(TransferListener transferListener) {
+//    mTransferListener = transferListener;
   }
 
   @Override
@@ -62,9 +66,9 @@ public final class EncryptedFileDataSource implements DataSource {
     // if we made it this far, we're open
     mOpened = true;
     // notify
-    if (mTransferListener != null) {
-      mTransferListener.onTransferStart(this, dataSpec);
-    }
+//    if (mTransferListener != null) {
+//      mTransferListener.onTransferStart(this, dataSpec);
+//    }
     // report
     return mBytesRemaining;
   }
@@ -118,9 +122,9 @@ public final class EncryptedFileDataSource implements DataSource {
       mBytesRemaining -= bytesRead;
     }
     // notify
-    if (mTransferListener != null) {
-      mTransferListener.onBytesTransferred(this, bytesRead);
-    }
+//    if (mTransferListener != null) {
+//      mTransferListener.onBytesTransferred(this, bytesRead);
+//    }
     // report
     return bytesRead;
   }
@@ -150,9 +154,9 @@ public final class EncryptedFileDataSource implements DataSource {
       mInputStream = null;
       if (mOpened) {
         mOpened = false;
-        if (mTransferListener != null) {
-          mTransferListener.onTransferEnd(this);
-        }
+//        if (mTransferListener != null) {
+//          mTransferListener.onTransferEnd(this);
+//        }
       }
     }
   }

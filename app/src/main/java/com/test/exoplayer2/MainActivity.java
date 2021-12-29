@@ -2,25 +2,16 @@ package com.test.exoplayer2;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 
-import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
+import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 
 import java.io.File;
 import java.security.SecureRandom;
@@ -36,13 +27,26 @@ public class MainActivity extends AppCompatActivity {
 
   private static final String ENCRYPTED_FILE_NAME = "encrypted.mp4";
 
+  private static final String key = "c28540d871bd8ea669098540be58fef5";
+  private static final String iv = "857d3a5fca54219a068a5c4dd9615afb";
+
   private Cipher mCipher;
   private SecretKeySpec mSecretKeySpec;
   private IvParameterSpec mIvParameterSpec;
 
   private File mEncryptedFile;
 
-  private SimpleExoPlayerView mSimpleExoPlayerView;
+  private PlayerView mSimpleExoPlayerView;
+
+  private byte[] hexStringToByteArray(String s) {
+    int len = s.length();
+    byte[] data = new byte[len / 2];
+    for (int i = 0; i < len; i += 2) {
+      data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+              + Character.digit(s.charAt(i+1), 16));
+    }
+    return data;
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -50,18 +54,18 @@ public class MainActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    mSimpleExoPlayerView = (SimpleExoPlayerView) findViewById(R.id.simpleexoplayerview);
+    mSimpleExoPlayerView = (PlayerView) findViewById(R.id.simpleexoplayerview);
 
-    mEncryptedFile = new File(getFilesDir(), ENCRYPTED_FILE_NAME);
+    mEncryptedFile = new File(getExternalFilesDir(""), ENCRYPTED_FILE_NAME);
 
     SecureRandom secureRandom = new SecureRandom();
-    byte[] key = new byte[16];
-    byte[] iv = new byte[16];
-    secureRandom.nextBytes(key);
-    secureRandom.nextBytes(iv);
+//    byte[] key = new byte[16];
+//    byte[] iv = new byte[16];
+//    secureRandom.nextBytes(key);
+//    secureRandom.nextBytes(iv);
 
-    mSecretKeySpec = new SecretKeySpec(key, AES_ALGORITHM);
-    mIvParameterSpec = new IvParameterSpec(iv);
+    mSecretKeySpec = new SecretKeySpec(hexStringToByteArray(key), AES_ALGORITHM);
+    mIvParameterSpec = new IvParameterSpec(hexStringToByteArray(iv));
 
     try {
       mCipher = Cipher.getInstance(AES_TRANSFORMATION);
@@ -91,26 +95,23 @@ public class MainActivity extends AppCompatActivity {
       // the ciphers, key and iv used in this demo, or to see it from top to bottom,
       // supply a url to a remote unencrypted file - this method will download and encrypt it
       // this first argument needs to be that url, not null or empty...
-      new DownloadAndEncryptFileTask(null, mEncryptedFile, encryptionCipher).execute();
+      new DownloadAndEncryptFileTask("https://goindex.olloollo.workers.dev/0:/0a8b21cb072b5ba29c4203b848fe5f23.mp4", mEncryptedFile, encryptionCipher).execute();
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
   public void playVideo(View view) {
-    DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-    TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveVideoTrackSelection.Factory(bandwidthMeter);
-    TrackSelector trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-    LoadControl loadControl = new DefaultLoadControl();
-    SimpleExoPlayer player = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+    SimpleExoPlayer player = new SimpleExoPlayer.Builder(this).build();
     mSimpleExoPlayerView.setPlayer(player);
-    DataSource.Factory dataSourceFactory = new EncryptedFileDataSourceFactory(mCipher, mSecretKeySpec, mIvParameterSpec, bandwidthMeter);
+    DataSource.Factory dataSourceFactory = new EncryptedFileDataSourceFactory(mCipher, mSecretKeySpec, mIvParameterSpec);
     ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
     try {
       Uri uri = Uri.fromFile(mEncryptedFile);
-      MediaSource videoSource = new ExtractorMediaSource(uri, dataSourceFactory, extractorsFactory, null, null);
+      ProgressiveMediaSource videoSource = new ProgressiveMediaSource.Factory(dataSourceFactory,
+              new DefaultExtractorsFactory()).createMediaSource(uri);
       player.prepare(videoSource);
-      player.setPlayWhenReady(true);
+      player.play();
     } catch (Exception e) {
       e.printStackTrace();
     }
